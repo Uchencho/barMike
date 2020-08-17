@@ -7,23 +7,20 @@ from .serializers import UserSerializer
 from .utils import generate_access_token, generate_refresh_token
 
 class Login(APIView):
+    permission_classes      = []
+    authentication_classes  = []
+
     def post(self, request):
         email = request.data.get('email', "Not Sent")
         password = request.data.get('password', "Not Sent")
         response = Response()
 
         if email == "Not Sent" or password == "Not Sent":
-            response.delete_cookie("refreshtoken")
-            response.data = {"message":"Email and Password is necessary to login"}
-            response.status_code = status.HTTP_400_BAD_REQUEST
-            return response
+            raise exceptions.AuthenticationFailed("Credentials not sent")
 
         user = User.objects.filter(email__iexact=email).first()
         if user == None or not user.check_password(password):
-            response.delete_cookie("refreshtoken")
-            response.data = {"message":"Invalid credentials"}
-            response.status_code = status.HTTP_400_BAD_REQUEST
-            return response
+            raise exceptions.AuthenticationFailed("Credentials incorrect")
 
         serialized_user = UserSerializer(user).data
 
@@ -35,3 +32,9 @@ class Login(APIView):
         response.data = serialized_user
         return response
 
+
+class HealthCheck(APIView):
+    def get(self, request):
+        return Response({
+            "message" : "Barister Mike workorking Effectively"
+        })

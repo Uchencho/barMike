@@ -34,7 +34,7 @@ def custom_exception_handler(exc, context):
     # to get the standard error response.
     response = exception_handler(exc, context)
 
-    # Now add the HTTP status code to the response.
+    # Now delete the cookies that would have otherwise being sent.
     if response is not None:
         response.delete_cookie("refreshtoken")
     return response
