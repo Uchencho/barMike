@@ -1,6 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework import exceptions, status
 from rest_framework.response import Response
+from django.conf import settings
+import jwt
 
 from accounts.models import User
 from .serializers import UserSerializer
@@ -34,8 +36,33 @@ class Login(APIView):
         return response
 
 
+class RefreshToken(APIView):
+    permission_classes      = []
+    authentication_classes  = []
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refreshtoken', "None")
+        if refresh_token == "None":
+            raise exceptions.AuthenticationFailed("Authentication Credentials were not provided")
+
+        try:
+            payload = jwt.decode(refresh_token, settings.REFRESH_TOKEN_SECRET,
+                                    algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise exceptions.AuthenticationFailed("Expired Refresh Token, please login again")
+        except:
+            raise exceptions.AuthenticationFailed("Can't decode, please login again")
+
+        user = User.objects.filter(id=payload.get("user_id")).first()
+        if user == None or not user.is_active:
+            raise exceptions.AuthenticationFailed("User not found")
+
+        new_access_token = generate_access_token(user)
+        return Response({"access_token": new_access_token})
+
+
 class HealthCheck(APIView):
     def get(self, request):
         return Response({
-            "message" : "Barister Mike workorking Effectively"
+            "message" : "Barister Mike working Effectively"
         })

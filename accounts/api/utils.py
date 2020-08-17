@@ -24,7 +24,7 @@ def generate_refresh_token(user):
         'iat' : datetime.utcnow(),
     }
 
-    refresh_token = jwt.encode(refresh_token_payload, settings.SECRET_KEY,
+    refresh_token = jwt.encode(refresh_token_payload, settings.REFRESH_TOKEN_SECRET,
                             algorithm='HS256').decode('utf-8')
     return refresh_token
 
