@@ -4,10 +4,11 @@ from rest_framework.response import Response
 
 from accounts.models import User
 from .serializers import UserSerializer
+from .permissions import BasicToken
 from .utils import generate_access_token, generate_refresh_token
 
 class Login(APIView):
-    permission_classes      = []
+    permission_classes      = [BasicToken]
     authentication_classes  = []
 
     def post(self, request):

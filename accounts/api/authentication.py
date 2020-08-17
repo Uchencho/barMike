@@ -1,5 +1,5 @@
 import jwt
-from rest_framework.authentication import BaseAuthentication
+from rest_framework.authentication import BaseAuthentication, get_authorization_header
 from rest_framework import exceptions
 from rest_framework.response import Response
 from django.conf import settings
@@ -16,14 +16,14 @@ class JWTAuthentication(BaseAuthentication):
             return None
 
         try:
-            access_token = authorization_header.split(" ")[1]
+            access_token = get_authorization_header(request).decode('utf-8').split(" ")[1]
             payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
             raise exceptions.AuthenticationFailed("Access token expired")
         except IndexError:
             raise exceptions.AuthenticationFailed("Access token not sent")
         except:
-            raise exceptions.AuthenticationFailed("Access token expired, error not caught")
+            raise exceptions.AuthenticationFailed("Authentication failed")
 
         user = User.objects.filter(id=payload['user_id']).first()
         if user is None:
