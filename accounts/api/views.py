@@ -2,12 +2,17 @@ from rest_framework.views import APIView
 from rest_framework import exceptions, status
 from rest_framework.response import Response
 from django.conf import settings
-import jwt
+import jwt, redis, json
 
 from accounts.models import User
 from .serializers import UserSerializer
 from .permissions import BasicToken
 from .utils import generate_access_token, generate_refresh_token
+
+
+#Connect to redis instance
+redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT,
+                                    db=0)
 
 class Login(APIView):
     permission_classes      = [BasicToken]
@@ -25,6 +30,17 @@ class Login(APIView):
         if user == None or not user.check_password(password):
             raise exceptions.AuthenticationFailed("Credentials incorrect")
 
+        #Check if username exists in redis
+        available = redis_instance.get(email)
+        if available:
+            print("\n\nFrom redis\n\n")
+            available = json.loads(available)
+            response.set_cookie(key='refreshtoken', value=available['refresh_token'], httponly=True)
+            available.pop('refresh_token')
+            response.data = available
+            return response
+
+
         serialized_user = UserSerializer(user).data
 
         access_token = generate_access_token(user)
@@ -33,6 +49,11 @@ class Login(APIView):
         response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
         serialized_user['access_token'] = access_token
         response.data = serialized_user
+
+        # Add it to redis
+        serialized_user['refresh_token'] = refresh_token
+        redis_instance.set(email, json.dumps(serialized_user))
+        response.data.pop("refresh_token")
         return response
 
 
