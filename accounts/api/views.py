@@ -3,6 +3,7 @@ from rest_framework import exceptions, status
 from rest_framework.response import Response
 from django.conf import settings
 import jwt, redis, json
+from datetime import timedelta
 
 from accounts.models import User
 from .serializers import UserSerializer
@@ -31,15 +32,16 @@ class Login(APIView):
             raise exceptions.AuthenticationFailed("Credentials incorrect")
 
         #Check if username exists in redis
-        available = redis_instance.get(email)
-        if available:
-            print("\n\nFrom redis\n\n")
-            available = json.loads(available)
-            response.set_cookie(key='refreshtoken', value=available['refresh_token'], httponly=True)
-            available.pop('refresh_token')
-            response.data = available
-            return response
-
+        try:
+            available = redis_instance.get(email)
+            if available:
+                available = json.loads(available)
+                response.set_cookie(key='refreshtoken', value=available['refresh_token'], httponly=True)
+                available.pop('refresh_token')
+                response.data = available
+                return response
+        except redis.exceptions.ConnectionError:
+            pass
 
         serialized_user = UserSerializer(user).data
 
@@ -51,8 +53,11 @@ class Login(APIView):
         response.data = serialized_user
 
         # Add it to redis
-        serialized_user['refresh_token'] = refresh_token
-        redis_instance.set(email, json.dumps(serialized_user))
+        try:
+            serialized_user['refresh_token'] = refresh_token
+            redis_instance.set(email, json.dumps(serialized_user), ex=timedelta(hours=2))
+        except redis.exceptions.ConnectionError:
+            pass
         response.data.pop("refresh_token")
         return response
 
@@ -87,3 +92,6 @@ class HealthCheck(APIView):
         return Response({
             "message" : "Barister Mike working Effectively"
         })
+
+
+# Optimize for speed where No trip to the db will be done
