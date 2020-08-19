@@ -9,3 +9,50 @@ class UserSerializer(serializers.ModelSerializer):
             'last_name','phone_number', 'is_active',
             'house_add','last_login',
         ]
+
+
+class UserRegisterSerializer(serializers.ModelSerializer):
+
+    password            = serializers.CharField(style={'input_type':'password'}, write_only=True)
+    confirm_password    = serializers.CharField(style={'input_type':'password'}, write_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'email',
+            'username',
+            'password',
+            'confirm_password',
+        ]
+        extra_kwargs = {'password':{'write_only':True}, 'confirm_password':{'write_only':True}}
+
+    def validate_password(self, value):
+        """
+        Validates that the password is at least 6 characters long
+        """
+        if len(value) < 6:
+            raise serializers.ValidationError("Password must be at least six characters long")
+        return value
+
+
+    def validate(self, data):
+        """
+        Validates that the passwords are the same
+        """
+        pw              = data.get('password')
+        pw2             = data.get('confirm_password')
+
+        if pw != pw2:
+            raise serializers.ValidationError("Passwords Must match")
+        return data
+
+    def create(self, validated_data):
+        user_obj = User(
+            username=validated_data.get('username'),
+            email=validated_data.get('email')
+        )
+        user_obj.set_password(validated_data.get('password'))
+        user_obj.save()
+
+        # Work on returning Matric Number
+        return user_obj

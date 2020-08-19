@@ -1,12 +1,12 @@
 from rest_framework.views import APIView
-from rest_framework import exceptions, status
+from rest_framework import exceptions, status, generics
 from rest_framework.response import Response
 from django.conf import settings
 import jwt, redis, json
 from datetime import timedelta
 
 from accounts.models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserRegisterSerializer
 from .permissions import BasicToken
 from .utils import generate_access_token, generate_refresh_token
 
@@ -85,6 +85,13 @@ class RefreshToken(APIView):
 
         new_access_token = generate_access_token(user)
         return Response({"access_token": new_access_token})
+
+
+class RegisterAPIView(generics.CreateAPIView):
+    queryset                = User.objects.all()
+    serializer_class        = UserRegisterSerializer
+    permission_classes      = [BasicToken]
+    authentication_classes  = []
 
 
 class HealthCheck(APIView):
