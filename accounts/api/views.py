@@ -94,6 +94,15 @@ class RegisterAPIView(generics.CreateAPIView):
     authentication_classes  = []
 
 
+class LogoutAPIView(APIView):
+    def post(self, request):
+        response = Response()
+        response.delete_cookie("refreshtoken")
+        response.data = {"message" : "logged out successfully"}
+        response.status_code = status.HTTP_204_NO_CONTENT
+        return response
+
+
 class HealthCheck(APIView):
     def get(self, request):
         return Response({
