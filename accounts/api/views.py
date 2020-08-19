@@ -1,13 +1,19 @@
 from rest_framework.views import APIView
-from rest_framework import exceptions, status
+from rest_framework import exceptions, status, generics
 from rest_framework.response import Response
 from django.conf import settings
-import jwt
+import jwt, redis, json
+from datetime import timedelta
 
 from accounts.models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserRegisterSerializer
 from .permissions import BasicToken
 from .utils import generate_access_token, generate_refresh_token
+
+
+#Connect to redis instance
+redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT,
+                                    db=0)
 
 class Login(APIView):
     permission_classes      = [BasicToken]
@@ -25,6 +31,18 @@ class Login(APIView):
         if user == None or not user.check_password(password):
             raise exceptions.AuthenticationFailed("Credentials incorrect")
 
+        #Check if username exists in redis
+        try:
+            available = redis_instance.get(email)
+            if available:
+                available = json.loads(available)
+                response.set_cookie(key='refreshtoken', value=available['refresh_token'], httponly=True)
+                available.pop('refresh_token')
+                response.data = available
+                return response
+        except redis.exceptions.ConnectionError:
+            pass
+
         serialized_user = UserSerializer(user).data
 
         access_token = generate_access_token(user)
@@ -33,6 +51,14 @@ class Login(APIView):
         response.set_cookie(key='refreshtoken', value=refresh_token, httponly=True)
         serialized_user['access_token'] = access_token
         response.data = serialized_user
+
+        # Add it to redis
+        try:
+            serialized_user['refresh_token'] = refresh_token
+            redis_instance.set(email, json.dumps(serialized_user), ex=timedelta(hours=2))
+        except redis.exceptions.ConnectionError:
+            pass
+        response.data.pop("refresh_token")
         return response
 
 
@@ -61,8 +87,27 @@ class RefreshToken(APIView):
         return Response({"access_token": new_access_token})
 
 
+class RegisterAPIView(generics.CreateAPIView):
+    queryset                = User.objects.all()
+    serializer_class        = UserRegisterSerializer
+    permission_classes      = [BasicToken]
+    authentication_classes  = []
+
+
+class LogoutAPIView(APIView):
+    def post(self, request):
+        response = Response()
+        response.delete_cookie("refreshtoken")
+        response.data = {"message" : "logged out successfully"}
+        response.status_code = status.HTTP_204_NO_CONTENT
+        return response
+
+
 class HealthCheck(APIView):
     def get(self, request):
         return Response({
             "message" : "Barister Mike working Effectively"
         })
+
+
+# Optimize for speed where No trip to the db will be done
