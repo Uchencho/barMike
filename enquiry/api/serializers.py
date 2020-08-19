@@ -3,7 +3,7 @@ from rest_framework import serializers
 from enquiry.models import Enquiry
 
 
-class CreateEnquirySerializer(serializers.ModelSerializer):
+class ListEnquirySerializer(serializers.ModelSerializer):
     user = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = Enquiry
@@ -18,6 +18,9 @@ class CreateEnquirySerializer(serializers.ModelSerializer):
     def get_user(self, obj):
         context = self.context['request']
         return context.user.username
+
+
+class CreateEnquirySerializer(ListEnquirySerializer):
 
     def create(self, validated_data):
         context = self.context['request']
