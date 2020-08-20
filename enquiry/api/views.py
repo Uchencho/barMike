@@ -24,3 +24,21 @@ class AllQuestionAPIView(generics.ListAPIView):
 
     def get_serializer_context(self, *args, **kwargs):
         return {"request" : self.request}
+
+
+class EditQuestionAPIView(generics.RetrieveUpdateDestroyAPIView):
+
+    serializer_class = ListEnquirySerializer
+
+    def get_queryset(self):
+        return Enquiry.objects.filter(user=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user,
+                        question=serializer.validated_data.get('question'))
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
