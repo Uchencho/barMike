@@ -1,9 +1,9 @@
 from rest_framework import generics, permissions
 
-from accounts.api.serializers import UserSerializer
+from .serializers import UserAdminSerializer
 from accounts.models import User
 
 class AllUsers(generics.ListAPIView):
     queryset                = User.objects.all()
-    serializer_class        = UserSerializer
+    serializer_class        = UserAdminSerializer
     permission_classes      = [permissions.IsAdminUser]
