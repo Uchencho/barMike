@@ -4,9 +4,10 @@ from rest_framework.response import Response
 from django.conf import settings
 import jwt, redis, json
 from datetime import timedelta
+from django.utils import timezone
 
 from accounts.models import User
-from .serializers import UserSerializer, UserRegisterSerializer
+from .serializers import UserSerializer, UserRegisterSerializer, UpdateProfileSerializer
 from .permissions import BasicToken
 from .utils import generate_access_token, generate_refresh_token
 
@@ -18,6 +19,9 @@ redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS
 class Login(APIView):
     permission_classes      = [BasicToken]
     authentication_classes  = []
+
+    def get_serializer_context(self, *args, **kwargs):
+        return {"request" : self.request}
 
     def post(self, request):
         email = request.data.get('email', "Not Sent")
@@ -42,6 +46,10 @@ class Login(APIView):
                 return response
         except redis.exceptions.ConnectionError:
             pass
+
+        user = User.objects.filter(email__iexact=email).first()
+        user.last_login = timezone.now()
+        user.save()
 
         serialized_user = UserSerializer(user).data
 
@@ -101,6 +109,17 @@ class LogoutAPIView(APIView):
         response.data = {"message" : "logged out successfully"}
         response.status_code = status.HTTP_204_NO_CONTENT
         return response
+
+
+class UpdateProfileView(generics.RetrieveUpdateAPIView):
+
+    serializer_class        =  UpdateProfileSerializer
+
+    def get_queryset(self):
+        return User.objects.filter(username__iexact=self.request.user.username)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
 
 
 class HealthCheck(APIView):
