@@ -122,6 +122,3 @@ class UpdateProfileView(generics.RetrieveUpdateAPIView):
 
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
-
-
-# Optimize for speed where No trip to the db will be done
