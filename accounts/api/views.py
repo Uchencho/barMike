@@ -31,14 +31,10 @@ class Login(APIView):
         if email == "Not Sent" or password == "Not Sent":
             raise exceptions.AuthenticationFailed("Credentials not sent")
 
-        user = User.objects.filter(email__iexact=email).first()
-        if user == None or not user.check_password(password):
-            raise exceptions.AuthenticationFailed("Credentials incorrect")
-
         #Check if username exists in redis
         try:
             available = redis_instance.get(email)
-            if available:
+            if available and json.loads(available)['password'] == password:
                 available = json.loads(available)
                 response.set_cookie(key='refreshtoken', value=available['refresh_token'], httponly=True)
                 available.pop('refresh_token')
@@ -46,6 +42,10 @@ class Login(APIView):
                 return response
         except redis.exceptions.ConnectionError:
             pass
+
+        user = User.objects.filter(email__iexact=email).first()
+        if user == None or not user.check_password(password):
+            raise exceptions.AuthenticationFailed("Credentials incorrect")
 
         user = User.objects.filter(email__iexact=email).first()
         user.last_login = timezone.now()
@@ -63,10 +63,12 @@ class Login(APIView):
         # Add it to redis
         try:
             serialized_user['refresh_token'] = refresh_token
+            serialized_user['password'] = password
             redis_instance.set(email, json.dumps(serialized_user), ex=timedelta(hours=2))
         except redis.exceptions.ConnectionError:
             pass
         response.data.pop("refresh_token")
+        response.data.pop("password")
         return response
 
 
@@ -120,13 +122,6 @@ class UpdateProfileView(generics.RetrieveUpdateAPIView):
 
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
-
-
-class HealthCheck(APIView):
-    def get(self, request):
-        return Response({
-            "message" : "Barister Mike working Effectively"
-        })
 
 
 # Optimize for speed where No trip to the db will be done
