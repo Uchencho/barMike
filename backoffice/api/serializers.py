@@ -29,6 +29,7 @@ class AdminEnquirySerializer(serializers.ModelSerializer):
                     'created', 
                     'updated', 
                     'answered']
+        extra_kwargs = {'question':{'read_only':True}}
 
     def get_user(self, obj):
         return obj.user.username
