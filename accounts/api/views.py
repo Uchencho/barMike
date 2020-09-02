@@ -5,6 +5,7 @@ from django.conf import settings
 import jwt, redis, json
 from datetime import timedelta
 from django.utils import timezone
+from push_notifications.models import GCMDevice
 
 from accounts.models import User
 from .serializers import UserSerializer, UserRegisterSerializer, UpdateProfileSerializer
@@ -50,6 +51,9 @@ class Login(APIView):
         user = User.objects.filter(email__iexact=email).first()
         user.last_login = timezone.now()
         user.save()
+
+        device = GCMDevice.objects.filter(user=user).first()
+        device.send_message(f"User with {user.email} has just logged in")
 
         serialized_user = UserSerializer(user).data
 
