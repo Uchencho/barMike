@@ -5,7 +5,7 @@ from django.conf import settings
 import jwt, redis, json
 from datetime import timedelta
 from django.utils import timezone
-from push_notifications.models import GCMDevice
+from pyfcm import FCMNotification
 
 from accounts.models import User
 from .serializers import UserSerializer, UserRegisterSerializer, UpdateProfileSerializer
@@ -52,9 +52,10 @@ class Login(APIView):
         user.last_login = timezone.now()
         user.save()
 
-        device = GCMDevice.objects.filter(user=user).first()
-        device.send_message(f"User with {user.email} has just logged in")
-
+        # Push notification
+        push_service = FCMNotification(api_key=settings.FCM_API_KEY)
+        push_service.notify_topic_subscribers(topic_name="do.not.stress.me", message_body="from python version 2")
+        
         serialized_user = UserSerializer(user).data
 
         access_token = generate_access_token(user)

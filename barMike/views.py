@@ -6,3 +6,4 @@ class HealthCheck(APIView):
         return Response({
             "message" : "Barister Mike working Effectively"
         })
+

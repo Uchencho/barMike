@@ -10,7 +10,7 @@ djangorestframework = "*"
 pyjwt = "*"
 redis = "*"
 django = "*"
-django-push-notifications = "*"
+pyfcm = "*"
 
 [requires]
 python_version = "3.7"
