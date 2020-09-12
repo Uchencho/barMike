@@ -1,6 +1,8 @@
 from rest_framework import serializers
+from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.geos import fromstr, Point
 
-from enquiry.models import Enquiry
+from enquiry.models import Enquiry, UserLocation
 
 
 class ListEnquirySerializer(serializers.ModelSerializer):
@@ -18,6 +20,31 @@ class ListEnquirySerializer(serializers.ModelSerializer):
     def get_user(self, obj):
         context = self.context['request']
         return context.user.username
+
+
+class UserLocationSerializer(serializers.ModelSerializer):
+    distance = serializers.SerializerMethodField(read_only=True)
+    name = serializers.SerializerMethodField(read_only=True)
+    class Meta:
+        model = UserLocation
+        fields =    [
+                    'id',
+                    'name',
+                    'location',
+                    'address',
+                    'city',
+                    'distance'
+                    ]
+
+    def get_name(self, obj):
+        return obj.name.email
+
+    def get_distance(self, obj):
+        longitude = 50.453647
+        latitude = -8.567856
+
+        user_location = Point(longitude, latitude, srid=4326)
+        return Distance(obj.location, user_location)
 
 
 class CreateEnquirySerializer(ListEnquirySerializer):

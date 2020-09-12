@@ -38,6 +38,8 @@ class UserLocation(gis_model.Model):
 
     objects = QuestionManager()
 
+    # DO NOT DECLARE STR METHOD HERE, LEAVE IT BLANK
+
     class Meta:
         verbose_name        = "User Location"
         verbose_name_plural = "Users' Location"
