@@ -36,8 +36,7 @@ class UserLocation(gis_model.Model):
     address     = gis_model.CharField(max_length=200)
     city        = gis_model.CharField(max_length=100)
 
-    def __str__(self):
-        return self.location
+    objects = QuestionManager()
 
     class Meta:
         verbose_name        = "User Location"
