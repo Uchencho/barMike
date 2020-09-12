@@ -1,6 +1,5 @@
 from rest_framework import serializers
 # from datetime import datetime
-from push_notifications.models import GCMDevice
 
 from accounts.models import User
 
@@ -75,10 +74,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         )
         user_obj.set_password(validated_data.get('password'))
         user_obj.save()
-
-        # Push notification
-        reg_id = validated_data.get('registration_id')
-        GCMDevice.objects.create(registration_id=reg_id, cloud_message_type="FCM", user=user_obj)
 
         # Work on returning Matric Number
         return user_obj

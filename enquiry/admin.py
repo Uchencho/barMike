@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Enquiry
+from django.contrib.gis.admin import OSMGeoAdmin
+from .models import Enquiry, UserLocation
 
 # Register your models here.
 class EnquiryAdmin(admin.ModelAdmin):
@@ -10,4 +11,13 @@ class EnquiryAdmin(admin.ModelAdmin):
                     'updated', 
                     'answered']
 
+class LocationAdmin(OSMGeoAdmin):
+    list_display = [
+        'name',
+        'location',
+        'address',
+        'city',
+    ]
+
 admin.site.register(Enquiry, EnquiryAdmin)
+admin.site.register(UserLocation, LocationAdmin)

@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.gis.db import models as gis_model
 
 from accounts.models import User
 
@@ -25,3 +26,21 @@ class Enquiry(models.Model):
     class Meta:
         verbose_name = "Enquiry"
         verbose_name_plural = "Enquiries"
+
+
+
+class UserLocation(gis_model.Model):
+
+    name        = gis_model.ForeignKey(User, on_delete=models.CASCADE)
+    location    = gis_model.PointField()
+    address     = gis_model.CharField(max_length=200)
+    city        = gis_model.CharField(max_length=100)
+
+    objects = QuestionManager()
+
+    # DO NOT DECLARE STR METHOD HERE, LEAVE IT BLANK
+
+    class Meta:
+        verbose_name        = "User Location"
+        verbose_name_plural = "Users' Location"
+

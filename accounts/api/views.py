@@ -2,10 +2,10 @@ from rest_framework.views import APIView
 from rest_framework import exceptions, status, generics
 from rest_framework.response import Response
 from django.conf import settings
-import jwt, redis, json
+import jwt, redis, json, asyncio
 from datetime import timedelta
 from django.utils import timezone
-from push_notifications.models import GCMDevice
+from pyfcm import FCMNotification
 
 from accounts.models import User
 from .serializers import UserSerializer, UserRegisterSerializer, UpdateProfileSerializer
@@ -16,6 +16,12 @@ from .utils import generate_access_token, generate_refresh_token
 #Connect to redis instance
 redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT,
                                     db=0)
+loop = asyncio.get_event_loop()
+
+def send_push():
+    # Push notification
+    push_service = FCMNotification(api_key=settings.FCM_API_KEY)
+    push_service.notify_topic_subscribers(topic_name="do.not.stress.me", message_body="from python version 2")
 
 class Login(APIView):
     permission_classes      = [BasicToken]
@@ -52,9 +58,9 @@ class Login(APIView):
         user.last_login = timezone.now()
         user.save()
 
-        device = GCMDevice.objects.filter(user=user).first()
-        device.send_message(f"User with {user.email} has just logged in")
-
+        loop.run_in_executor(None, send_push) # 212ms
+        # send_push() # 1800ms
+        
         serialized_user = UserSerializer(user).data
 
         access_token = generate_access_token(user)

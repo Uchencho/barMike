@@ -1,8 +1,12 @@
-from rest_framework import generics
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.contrib.gis.geos import fromstr, Point
+from django.contrib.gis.db.models.functions import Distance
 
-from enquiry.models import Enquiry
+from enquiry.models import Enquiry, UserLocation
 from accounts.models import User
-from .serializers import CreateEnquirySerializer, ListEnquirySerializer
+from .serializers import CreateEnquirySerializer, ListEnquirySerializer, UserLocationSerializer
 
 class AskQuestionAPIView(generics.CreateAPIView):
 
@@ -42,3 +46,49 @@ class EditQuestionAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
+
+class AddLocation(APIView):
+
+    def post(self, request):
+
+        lon     = request.data.get("longitude", None)
+        lat     = request.data.get("latitude", None)
+        address = request.data.get("address", None)
+        city    = request.data.get("city", None)
+
+        # Sample payload
+        # {
+        #     "latitude" : 30.4260072,
+        #     "longitude" : -9.6199602,
+        #     "address" : "kodesho street",
+        #     "city" : "lagos"
+        # }
+
+        if not lat or not lon or not address or not city:
+            return Response({"message" : "Invalid payload"}, status=status.HTTP_400_BAD_REQUEST)
+
+        location = fromstr(f"POINT({lon} {lat})", srid=4326)
+
+        UserLocation.objects.create(
+            name = request.user,
+            address = address,
+            city = city,
+            location = location
+        )
+
+        return Response({"message" : "created successfully"}, status=status.HTTP_200_OK)
+
+
+class GetDistance(generics.ListAPIView):
+
+    serializer_class        = UserLocationSerializer
+
+    def get_queryset(self):
+        longitude = 50.453647
+        latitude = -8.567856
+
+        user_location = Point(longitude, latitude, srid=4326)
+        return UserLocation.objects.annotate(distance=Distance('location',
+                                                user_location)).order_by('distance')
+
