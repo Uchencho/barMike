@@ -3,7 +3,7 @@ from django.urls import path, include
 from .views import ( 
                     AskQuestionAPIView, AllQuestionAPIView,
                     EditQuestionAPIView, AddLocation, 
-                    GetDistance, UploadView)
+                    GetDistance, UploadView, GetUploadedFile)
 
 app_name = "enquiry"
 
@@ -14,5 +14,7 @@ urlpatterns = [
 
     path('location', AddLocation.as_view(), name='location'),
     path('distance', GetDistance.as_view(), name='distance'),
+
     path('upload', UploadView.as_view(), name='cloudinary-upload'),
+    path('getimage', GetUploadedFile.as_view(), name='get-image'),
 ]

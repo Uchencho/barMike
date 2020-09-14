@@ -5,7 +5,7 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from django.contrib.gis.geos import fromstr, Point
 from django.contrib.gis.db.models.functions import Distance
 
-from cloudinary import uploader
+from cloudinary import uploader, utils
 
 from enquiry.models import Enquiry, UserLocation
 from accounts.models import User
@@ -102,6 +102,9 @@ class UploadView(APIView):
 
     @staticmethod
     def post(request):
+        """
+        The static method prevents post from accessing other methods in the class
+        """
         the_file = request.data.get('picture', None)
         cost     = request.data.get('cost', None)
 
@@ -111,6 +114,7 @@ class UploadView(APIView):
         if not the_file:
             return Response({"picture":"No image was sent"}, status=status.HTTP_400_BAD_REQUEST)
 
+        #This process takes time, if url is not needed immediately, run concurrently maybe?
         try:
             upload_data = uploader.upload(the_file, public_id=filename)
             return Response({"status":"success",
@@ -122,11 +126,24 @@ class UploadView(APIView):
                             "file_extension" : file_ext}, status=201)
         
         except Exception as e:
-            print("\n\n", "Error occured in sending image", "\n\n")
+            print("\n\n", "Error occured in sending image: ", e, "\n\n")
             return Response({"message" : "Could not send image to cloudinary"},
                                 status=status.HTTP_400_BAD_REQUEST)
 
 
+class GetUploadedFile(APIView):
 
+    def post(self, request):
+        """
+        Retrieve the url of an image stored on cloudinary
+        """
+        image_name      = request.data.get("image_name", None)
 
+        if not image_name:
+            return Response({"message":"Did not send any image name"},
+                                status=status.HTTP_400_BAD_REQUEST)
         
+        link            = utils.cloudinary_url(image_name)
+        return Response({"status" : "success", "link_url" : link[0]},
+                            status=status.HTTP_200_OK)
+
