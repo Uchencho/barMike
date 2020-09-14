@@ -103,13 +103,30 @@ class UploadView(APIView):
     @staticmethod
     def post(request):
         the_file = request.data.get('picture', None)
+        cost     = request.data.get('cost', None)
+
+        filename = str(the_file).split(".")[0]
+        file_ext = str(the_file).split(".")[1]
 
         if not the_file:
             return Response({"picture":"No image was sent"}, status=status.HTTP_400_BAD_REQUEST)
 
-        upload_data = uploader.upload(the_file)
-        return Response({"status":"success",
-                        "data":upload_data}, status=201)
+        try:
+            upload_data = uploader.upload(the_file, public_id=filename)
+            return Response({"status":"success",
+                            "cost" : cost,
+                            "created_at" : upload_data["created_at"],
+                            "secure_url" : upload_data["secure_url"],
+                            "url" : upload_data["url"],
+                            "file_name" : filename,
+                            "file_extension" : file_ext}, status=201)
+        
+        except Exception as e:
+            print("\n\n", "Error occured in sending image", "\n\n")
+            return Response({"message" : "Could not send image to cloudinary"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
         
