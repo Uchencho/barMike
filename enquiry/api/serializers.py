@@ -23,7 +23,7 @@ class ListEnquirySerializer(serializers.ModelSerializer):
 
 
 class UserLocationSerializer(serializers.ModelSerializer):
-    distance = serializers.SerializerMethodField(read_only=True)
+    # distance = serializers.SerializerMethodField(read_only=True)
     name = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = UserLocation
@@ -33,18 +33,18 @@ class UserLocationSerializer(serializers.ModelSerializer):
                     'location',
                     'address',
                     'city',
-                    'distance'
+                    # 'distance'
                     ]
 
     def get_name(self, obj):
         return obj.name.email
 
-    def get_distance(self, obj):
-        longitude = 50.453647
-        latitude = -8.567856
+    # def get_distance(self, obj):
+    #     longitude = 50.453647
+    #     latitude = -8.567856
 
-        user_location = Point(longitude, latitude, srid=4326)
-        return Distance(obj.location, user_location)
+    #     user_location = Point(longitude, latitude, srid=4326)
+    #     return Distance(obj.location, user_location).__getattribute__
 
 
 class CreateEnquirySerializer(ListEnquirySerializer):

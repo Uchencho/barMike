@@ -1,8 +1,11 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, JSONParser
 from django.contrib.gis.geos import fromstr, Point
 from django.contrib.gis.db.models.functions import Distance
+
+from cloudinary import uploader
 
 from enquiry.models import Enquiry, UserLocation
 from accounts.models import User
@@ -92,3 +95,21 @@ class GetDistance(generics.ListAPIView):
         return UserLocation.objects.annotate(distance=Distance('location',
                                                 user_location)).order_by('distance')
 
+
+class UploadView(APIView):
+
+    parser_classes = [MultiPartParser, JSONParser]
+
+    @staticmethod
+    def post(request):
+        the_file = request.data.get('picture', None)
+
+        if not the_file:
+            return Response({"picture":"No image was sent"}, status=status.HTTP_400_BAD_REQUEST)
+
+        upload_data = uploader.upload(the_file)
+        return Response({"status":"success",
+                        "data":upload_data}, status=201)
+
+
+        

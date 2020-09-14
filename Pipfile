@@ -12,6 +12,7 @@ redis = "*"
 django = "*"
 pyfcm = "*"
 psycopg2-binary = "*"
+cloudinary = "*"
 
 [requires]
 python_version = "3.7"
